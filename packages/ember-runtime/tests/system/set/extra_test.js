@@ -41,6 +41,7 @@ test('should clear a set of its content', function() {
 
   aSet.clear();
   equals(get(aSet, 'length'), 0, 'should have 0 items');
+  equals(aSet.contains(1), false, 'should not contain items');
   
   count = 0;
   aSet.forEach(function() { count++; });
