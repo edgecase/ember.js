@@ -12,7 +12,7 @@ require('ember-runtime/mixins/freezable');
 
 
 
-var get = Ember.get, set = Ember.set, guidFor = Ember.guidFor, none = Ember.none;
+var get = Ember.get, set = Ember.set, none = Ember.none;
 
 /**
   @class
@@ -141,7 +141,7 @@ Ember.Set = Ember.CoreObject.extend(Ember.MutableEnumerable, Ember.Copyable, Emb
     var guid;
     this.enumerableContentWillChange(len, 0);
     for (var i=0; i < len; i++){
-      guid = guidFor(this[i]);
+      guid = this.guidFor(this[i]);
       delete this[guid];
       delete this[i];
     }
@@ -151,7 +151,18 @@ Ember.Set = Ember.CoreObject.extend(Ember.MutableEnumerable, Ember.Copyable, Emb
   },
 
   /**
-    Returns true if the passed object is also an enumerable that contains the 
+    Returns a unique identifier for the object.
+    Defaults to Ember.guidFor. This can be overridden
+    if your objects have their own unique identifier.
+    The returned value must be a string, not an integer.
+
+    @param {Object} obj the object to identify
+    @returns {String} the unique id for the object
+  */
+  guidFor: Ember.guidFor,
+
+  /**
+    Returns true if the passed object is also an enumerable that contains the
     same objects as the receiver.
 
     @param {Ember.Set} obj the other object
@@ -267,14 +278,14 @@ Ember.Set = Ember.CoreObject.extend(Ember.MutableEnumerable, Ember.Copyable, Emb
   addObject: function(obj) {
     if (get(this, 'isFrozen')) throw new Error(Ember.FROZEN_ERROR);
     if (none(obj)) return this; // nothing to do
-    
-    var guid = guidFor(obj),
+
+    var guid = this.guidFor(obj),
         idx  = this[guid],
         len  = get(this, 'length'),
         added ;
-        
-    if (idx>=0 && idx<len && (this[idx] === obj)) return this; // added
-    
+
+    if (idx>=0 && idx<len) return this; // object already in set
+
     added = [obj];
     this.enumerableContentWillChange(null, added);
     len = get(this, 'length');
@@ -285,28 +296,28 @@ Ember.Set = Ember.CoreObject.extend(Ember.MutableEnumerable, Ember.Copyable, Emb
 
     return this;
   },
-  
+
   /** @private (nodoc) - implements Ember.MutableEnumerable */
   removeObject: function(obj) {
     if (get(this, 'isFrozen')) throw new Error(Ember.FROZEN_ERROR);
     if (none(obj)) return this; // nothing to do
-    
-    var guid = guidFor(obj),
+
+    var guid = this.guidFor(obj),
         idx  = this[guid],
         len = get(this, 'length'),
         last, removed;
-        
-    
+
+
     if (idx>=0 && idx<len && (this[idx] === obj)) {
       removed = [obj];
 
       this.enumerableContentWillChange(removed, null);
-      
+
       // swap items - basically move the item to the end so it can be removed
       if (idx < len-1) {
         last = this[len-1];
         this[idx] = last;
-        this[guidFor(last)] = idx;
+        this[this.guidFor(last)] = idx;
       }
 
       delete this[guid];
@@ -315,26 +326,26 @@ Ember.Set = Ember.CoreObject.extend(Ember.MutableEnumerable, Ember.Copyable, Emb
 
       this.enumerableContentDidChange(removed, null);
     }
-    
+
     return this;
   },
 
   /** @private (nodoc) - optimized version */
   contains: function(obj) {
-    return this[guidFor(obj)]>=0;
+    return this[this.guidFor(obj)]>=0;
   },
-  
+
   /** @private (nodoc) */
   copy: function() {
     var C = this.constructor, ret = new C(), loc = get(this, 'length');
     set(ret, 'length', loc);
     while(--loc>=0) {
       ret[loc] = this[loc];
-      ret[guidFor(this[loc])] = loc;
+      ret[this.guidFor(this[loc])] = loc;
     }
     return ret;
   },
-  
+
   /** @private */
   toString: function() {
     var len = this.length, idx, array = [];
